@@ -1,0 +1,12 @@
+streamlit>=1.20
+pandas
+numpy
+plotly
+prophet
+scikit-learn
+xgboost
+shap
+joblib
+python-dateutil
+transformers
+speech_recognition

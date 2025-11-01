@@ -1,0 +1,22 @@
+Date / Time,Mode,Category,Sub category,Income/Expense,Debit/Credit,Description
+2024-01-03,UPI,Food,Meals,Expense,200,Lunch at cafe
+2024-01-05,Card,Transport,Taxi,Expense,120,Taxi to office
+2024-01-08,Card,Entertainment,Movies,Expense,250,Movie tickets
+2024-02-02,Bank Transfer,Rent,Home,Expense,8000,Monthly rent
+2024-02-10,UPI,Food,Dinner,Expense,180,Dinner with family
+2024-02-14,Card,Shopping,Clothes,Expense,400,New shirt
+2024-03-01,Bank Transfer,Rent,Home,Expense,8500,Monthly rent
+2024-03-05,UPI,Transport,Taxi,Expense,160,Taxi ride
+2024-03-09,Card,Food,Meals,Expense,300,Team lunch
+2024-04-02,Bank Transfer,Rent,Home,Expense,9000,Monthly rent
+2024-04-06,Card,Shopping,Accessories,Expense,220,Accessory shopping
+2024-04-12,UPI,Entertainment,Subscriptions,Expense,100,Music subscription
+2024-05-03,Bank Transfer,Rent,Home,Expense,9500,Monthly rent
+2024-05-05,Card,Food,Drinks,Expense,180,Coffee
+2024-05-10,UPI,Transport,Train,Expense,500,Train tickets
+2024-06-01,Bank Transfer,Rent,Home,Expense,9500,Monthly rent
+2024-06-04,Card,Food,Meals,Expense,260,Group dinner
+2024-06-10,Card,Entertainment,Concerts,Expense,300,Concert tickets
+2024-07-03,Bank Transfer,Rent,Home,Expense,9500,Monthly rent
+2024-07-05,Card,Shopping,Shoes,Expense,400,New shoes
+2024-07-11,Card,Food,Meals,Expense,180,Team lunch

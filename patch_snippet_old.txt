@@ -1,0 +1,73 @@
+
+# Data Cleaning
+df_clean = clean_csv(df)
+
+if not df_clean.empty:
+    # Sidebar with Enhanced Filters
+    with st.sidebar:
+        st.markdown('<div class="sidebar-header">🔧 Dashboard Controls</div>', unsafe_allow_html=True)
+        
+# -------------------------------
+# \ud83d\udcb0 Savings Estimator Section
+st.sidebar.markdown("### \ud83d\udcb0 Savings Estimator")
+
+# Let user choose forecast months
+forecast_months = st.sidebar.slider("Forecast Next (Months)", 1, 12, 6)
+
+# Calculate historical savings
+if 'Income/Expense' in df_filtered.columns and 'amount' in df_filtered.columns:
+    df_filtered['date'] = pd.to_datetime(df_filtered['date'])
+    monthly_income = df_filtered[df_filtered['Income/Expense'].str.lower() == 'income'].groupby(df_filtered['date'].dt.to_period('M'))['amount'].sum()
+    monthly_expense = df_filtered[df_filtered['Income/Expense'].str.lower() == 'expense'].groupby(df_filtered['date'].dt.to_period('M'))['amount'].sum()
+
+    monthly_data = pd.DataFrame({
+        'Income': monthly_income,
+        'Expense': monthly_expense
+    }).fillna(0)
+
+    monthly_data['Savings'] = monthly_data['Income'] - monthly_data['Expense']
+    monthly_data.index = monthly_data.index.to_timestamp()
+
+    # Display current average savings
+    avg_saving = monthly_data['Savings'].mean()
+    st.sidebar.metric(label="\ud83d\udcb8 Avg Monthly Savings", value=f"\u20b9{avg_saving:,.0f}")
+
+    # Forecast future savings using Prophet
+    from prophet import Prophet
+
+    savings_df = monthly_data.reset_index()[['date', 'Savings']]
+    savings_df.columns = ['ds', 'y']
+
+    model = Prophet()
+    model.fit(savings_df)
+
+    future = model.make_future_dataframe(periods=forecast_months, freq='M')
+    forecast = model.predict(future)
+
+    # Plot forecast
+    st.markdown('<div class="section-header">\ud83d\udcb0 Savings Forecast</div>', unsafe_allow_html=True)
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=savings_df['ds'], y=savings_df['y'], mode='lines+markers', name='Actual Savings'))
+    fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat'], mode='lines', name='Forecasted Savings', line=dict(color='cyan')))
+    fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat_upper'], fill=None, mode='lines', line_color='lightblue', showlegend=False))
+    fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat_lower'], fill='tonexty', mode='lines', line_color='lightblue', name='Confidence Interval'))
+
+    fig.update_layout(
+        template='plotly_dark',
+        xaxis_title="Date",
+        yaxis_title="Savings (\u20b9)",
+        title="Projected Savings Trend",
+        legend_title="Legend",
+        height=400
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+    # Future summary
+    avg_future_saving = forecast.tail(forecast_months)['yhat'].mean()
+    st.success(f"\ud83d\udd25 Based on your current trend, you can expect to save approximately **\u20b9{avg_future_saving:,.0f} per month** over the next {forecast_months} months.")
+
+else:
+    st.sidebar.warning("\u26a0\ufe0f Unable to calculate savings — please ensure your data has 'Income/Expense' and 'amount' columns.")
+       
+
+        # Date Range
