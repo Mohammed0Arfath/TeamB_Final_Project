@@ -1,0 +1,37 @@
+<<<<<<< HEAD
+# Ignore virtual environments
+venv/
+.env/
+
+# Ignore cache and temporary files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+# .gitignore
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+.env
+# Ignore data and model outputs
+*.csv
+*.xlsx
+*.pkl
+*.h5
+*.sav
+*.npy
+*.npz
+
+# Ignore OS files
+.DS_Store
+
+# Ignore project build/output folders
+# project_output/
+# data/
+# models/
+# reports/
+=======
+/myvenv
+>>>>>>> b50393eb3518db5ccd89dd25167a6e1f57dbf3b3
