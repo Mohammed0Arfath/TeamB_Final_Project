@@ -180,7 +180,7 @@ Development Dependencies (requirements-dev.txt):
 
 1. **Clone the repository**:
 ```bash
-git clone <repository-url>
+git clone https://github.com/Mohammed0Arfath/TeamB_Final_Project.git
 cd BudgetWise-Forecasting
 ```
 
@@ -530,7 +530,7 @@ The Streamlit dashboard provides:
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/Mohammed0Arfath/BudgetWise-AI-based-Expense-Forecasting-Tool.git
+git clone https://github.com/Mohammed0Arfath/TeamB_Final_Project.git
 cd BudgetWise-Forecasting
 ```
 
@@ -609,18 +609,6 @@ streamlit run app/streamlit_app.py
 - Focus: Personal Finance Management & Forecasting
 - Achievement: Production-ready application with industry-leading accuracy
 
-## 👥 Team Members
-
-### Team B - Infosys Springboard 6.0
-
-| Name | Role | GitHub |
-|------|------|--------|
-| **Mohammed Arfath** | Team Lead & ML Engineer | [@Mohammed0Arfath](https://github.com/Mohammed0Arfath) |
-| **Team Member 2** | Data Scientist | GitHub Link |
-| **Team Member 3** | Backend Developer | GitHub Link |
-| **Team Member 4** | Frontend Developer | GitHub Link |
-
-*Note: Update team member information as appropriate*
 
 ## 🤝 Contributing
 
