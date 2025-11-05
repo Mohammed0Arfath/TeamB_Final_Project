@@ -674,6 +674,67 @@ class BudgetWiseApp:
         
         st.markdown("## 🔮 Expense Prediction")
         
+        # CSV Upload Section
+        st.markdown("### 📁 Upload Custom Data (Optional)")
+        uploaded_file = st.file_uploader(
+            "Upload CSV file with expense data",
+            type=['csv'],
+            help="Upload a CSV file with the same features as training data. Required columns: date, Bills & Utilities, Education, Entertainment, Food & Dining, Healthcare, Income, Others, Savings, Travel, total_daily_expense, daily_expense_capped, original_daily_expense"
+        )
+        
+        # Process uploaded file
+        uploaded_data = None
+        if uploaded_file is not None:
+            try:
+                uploaded_data = pd.read_csv(uploaded_file)
+                uploaded_data['date'] = pd.to_datetime(uploaded_data['date'])
+                
+                # Define required columns
+                required_columns = [
+                    'date', 'Bills & Utilities', 'Education', 'Entertainment', 
+                    'Food & Dining', 'Healthcare', 'Income', 'Others', 'Savings', 
+                    'Travel', 'total_daily_expense', 'daily_expense_capped', 
+                    'original_daily_expense'
+                ]
+                
+                # Validate columns
+                missing_columns = [col for col in required_columns if col not in uploaded_data.columns]
+                extra_columns = [col for col in uploaded_data.columns if col not in required_columns]
+                
+                if missing_columns:
+                    st.error(f"❌ Missing required columns: {', '.join(missing_columns)}")
+                    st.info("💡 Please ensure your CSV has all required columns. Download the sample test CSV to see the correct format.")
+                    uploaded_data = None
+                elif extra_columns:
+                    st.warning(f"⚠️ Extra columns found (will be ignored): {', '.join(extra_columns)}")
+                    uploaded_data = uploaded_data[required_columns]
+                    st.success(f"✅ Successfully loaded {len(uploaded_data)} rows from uploaded file!")
+                else:
+                    st.success(f"✅ Successfully loaded {len(uploaded_data)} rows with correct format!")
+                    
+                    # Show preview
+                    with st.expander("📊 Preview Uploaded Data"):
+                        st.dataframe(uploaded_data.head(10), use_container_width=True)
+                        
+                        # Show summary stats
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            st.metric("Total Rows", len(uploaded_data))
+                        with col2:
+                            st.metric("Date Range", f"{uploaded_data['date'].min().date()} to {uploaded_data['date'].max().date()}")
+                        with col3:
+                            st.metric("Avg Daily Expense", f"₹{uploaded_data['total_daily_expense'].mean():.2f}")
+                            
+            except Exception as e:
+                st.error(f"❌ Error loading file: {str(e)}")
+                uploaded_data = None
+        
+        # Use uploaded data if available, otherwise use default data
+        data_source = uploaded_data if uploaded_data is not None else self.all_data
+        data_source_label = "Uploaded Data" if uploaded_data is not None else "Default Training Data"
+        
+        st.info(f"📊 Using data source: **{data_source_label}**")
+        
         # Input section
         st.markdown("### 📊 Input Parameters")
         
@@ -709,8 +770,8 @@ class BudgetWiseApp:
         # Historical context
         st.markdown("### 📈 Recent Expense Trends")
         
-        # Get recent data
-        recent_data = self.all_data.tail(30)
+        # Get recent data from the selected data source
+        recent_data = data_source.tail(30)
         
         fig_recent = go.Figure()
         fig_recent.add_trace(go.Scatter(
@@ -735,7 +796,7 @@ class BudgetWiseApp:
         if st.button("🚀 Generate Predictions", type="primary"):
             with st.spinner(f"Generating predictions using {selected_model}..."):
                 # Load and use the selected model for predictions
-                predictions = self.generate_model_predictions(selected_model, prediction_days, start_date, available_models[selected_model])
+                predictions = self.generate_model_predictions(selected_model, prediction_days, start_date, available_models[selected_model], data_source)
                 
                 st.markdown("### 🎯 Prediction Results")
                 
@@ -813,12 +874,16 @@ class BudgetWiseApp:
                 
                 st.plotly_chart(fig_pred, use_container_width=True)
     
-    def generate_mock_predictions(self, days, start_date):
+    def generate_mock_predictions(self, days, start_date, data_source=None):
         """Generate mock predictions for demo purposes"""
         
+        # Use provided data source or fall back to self.all_data
+        if data_source is None:
+            data_source = self.all_data
+        
         # Use recent trends to generate realistic predictions
-        recent_avg = self.all_data.tail(30)['total_daily_expense'].mean()
-        recent_std = self.all_data.tail(30)['total_daily_expense'].std()
+        recent_avg = data_source.tail(30)['total_daily_expense'].mean()
+        recent_std = data_source.tail(30)['total_daily_expense'].std()
         
         # Generate predictions with some randomness
         daily_predictions = []
@@ -954,26 +1019,34 @@ class BudgetWiseApp:
         
         return models
     
-    def generate_model_predictions(self, model_name, days, start_date, model_info):
+    def generate_model_predictions(self, model_name, days, start_date, model_info, data_source=None):
         """Generate predictions using the selected model"""
+        
+        # Use provided data source or fall back to self.all_data
+        if data_source is None:
+            data_source = self.all_data
         
         try:
             # Try to load and use actual model
             if model_info["type"] == "ml" and model_info["file"]:
-                return self.load_and_predict_ml_model(model_name, days, start_date, model_info)
+                return self.load_and_predict_ml_model(model_name, days, start_date, model_info, data_source)
             elif model_info["type"] == "baseline" and model_info["file"]:
-                return self.load_and_predict_baseline_model(model_name, days, start_date, model_info)
+                return self.load_and_predict_baseline_model(model_name, days, start_date, model_info, data_source)
             elif model_info["type"] == "deep_learning" and model_info["file"]:
-                return self.load_and_predict_dl_model(model_name, days, start_date, model_info)
+                return self.load_and_predict_dl_model(model_name, days, start_date, model_info, data_source)
             else:
                 # Fallback to enhanced mock predictions based on model type
-                return self.generate_enhanced_mock_predictions(model_name, days, start_date, model_info)
+                return self.generate_enhanced_mock_predictions(model_name, days, start_date, model_info, data_source)
         except Exception as e:
             st.warning(f"Could not load model {model_name}. Using simulation based on model characteristics.")
-            return self.generate_enhanced_mock_predictions(model_name, days, start_date, model_info)
+            return self.generate_enhanced_mock_predictions(model_name, days, start_date, model_info, data_source)
     
-    def load_and_predict_ml_model(self, model_name, days, start_date, model_info):
+    def load_and_predict_ml_model(self, model_name, days, start_date, model_info, data_source=None):
         """Load and predict using ML models (XGBoost, Random Forest)"""
+        
+        # Use provided data source or fall back to self.all_data
+        if data_source is None:
+            data_source = self.all_data
         
         try:
             project_root = Path("C:/Users/moham/Infosys")
@@ -991,10 +1064,10 @@ class BudgetWiseApp:
                     # The model was trained with extensive feature engineering
                     # Fall back to simulation for now
                     st.info(f"{model_name} requires {expected_features} features from complex feature engineering. Using high-fidelity simulation based on model performance.")
-                    return self.generate_enhanced_mock_predictions(model_name, days, start_date, model_info)
+                    return self.generate_enhanced_mock_predictions(model_name, days, start_date, model_info, data_source)
             
             # Get recent data for features
-            recent_data = self.all_data.tail(60).copy()
+            recent_data = data_source.tail(60).copy()
             
             # Try to create features and predict
             features = self.create_prediction_features(recent_data, days)
@@ -1006,7 +1079,7 @@ class BudgetWiseApp:
                 else:
                     # Feature mismatch - use simulation
                     st.info(f"{model_name} expects {scaler.n_features_in_} features, but we have {features.shape[1]}. Using simulation.")
-                    return self.generate_enhanced_mock_predictions(model_name, days, start_date, model_info)
+                    return self.generate_enhanced_mock_predictions(model_name, days, start_date, model_info, data_source)
             
             # Make predictions
             if hasattr(model, 'predict'):
@@ -1014,7 +1087,7 @@ class BudgetWiseApp:
                 daily_predictions = [max(0, pred) for pred in raw_predictions]
             else:
                 # Fallback
-                daily_predictions = self.generate_mock_predictions(days, start_date)['daily_predictions']
+                daily_predictions = self.generate_mock_predictions(days, start_date, data_source)['daily_predictions']
             
             avg_prediction = np.mean(daily_predictions)
             total_prediction = np.sum(daily_predictions)
@@ -1032,10 +1105,14 @@ class BudgetWiseApp:
         except Exception as e:
             st.warning(f"Could not load {model_name} model: {str(e)}")
             st.info("Using enhanced simulation based on model characteristics.")
-            return self.generate_enhanced_mock_predictions(model_name, days, start_date, model_info)
+            return self.generate_enhanced_mock_predictions(model_name, days, start_date, model_info, data_source)
     
-    def load_and_predict_baseline_model(self, model_name, days, start_date, model_info):
+    def load_and_predict_baseline_model(self, model_name, days, start_date, model_info, data_source=None):
         """Load and predict using baseline models (Prophet, ARIMA, Linear Regression)"""
+        
+        # Use provided data source or fall back to self.all_data
+        if data_source is None:
+            data_source = self.all_data
         
         try:
             project_root = Path("C:/Users/moham/Infosys")
@@ -1043,27 +1120,31 @@ class BudgetWiseApp:
             
             if "prophet" in model_info['file'].lower():
                 # Prophet model prediction
-                return self.predict_with_prophet(model_path, days, start_date)
+                return self.predict_with_prophet(model_path, days, start_date, data_source)
             else:
                 # Other baseline models
                 model = joblib.load(model_path)
-                return self.predict_with_baseline_model(model, model_name, days, start_date)
+                return self.predict_with_baseline_model(model, model_name, days, start_date, data_source)
                 
         except Exception as e:
             st.error(f"Error loading baseline model: {str(e)}")
-            return self.generate_enhanced_mock_predictions(model_name, days, start_date, model_info)
+            return self.generate_enhanced_mock_predictions(model_name, days, start_date, model_info, data_source)
     
-    def load_and_predict_dl_model(self, model_name, days, start_date, model_info):
+    def load_and_predict_dl_model(self, model_name, days, start_date, model_info, data_source=None):
         """Load and predict using deep learning models"""
+        
+        # Use provided data source or fall back to self.all_data
+        if data_source is None:
+            data_source = self.all_data
         
         try:
             # Note: This would require tensorflow/keras to be properly loaded
             st.info("Deep learning model prediction requires TensorFlow. Using simulation based on model performance.")
-            return self.generate_enhanced_mock_predictions(model_name, days, start_date, model_info)
+            return self.generate_enhanced_mock_predictions(model_name, days, start_date, model_info, data_source)
             
         except Exception as e:
             st.error(f"Error loading deep learning model: {str(e)}")
-            return self.generate_enhanced_mock_predictions(model_name, days, start_date, model_info)
+            return self.generate_enhanced_mock_predictions(model_name, days, start_date, model_info, data_source)
     
     def create_prediction_features(self, recent_data, days):
         """Create features for model prediction (matching training features)"""
@@ -1093,11 +1174,20 @@ class BudgetWiseApp:
         
         return np.array(features)
     
-    def generate_enhanced_mock_predictions(self, model_name, days, start_date, model_info):
+    def generate_enhanced_mock_predictions(self, model_name, days, start_date, model_info, data_source=None):
         """Generate enhanced mock predictions based on model characteristics"""
         
-        recent_avg = self.all_data.tail(30)['total_daily_expense'].mean()
-        recent_std = self.all_data.tail(30)['total_daily_expense'].std()
+        # Use provided data source or fall back to self.all_data
+        if data_source is None:
+            data_source = self.all_data
+        
+        recent_avg = data_source.tail(30)['total_daily_expense'].mean()
+        recent_std = data_source.tail(30)['total_daily_expense'].std()
+        
+        # Fallback if data shows zero or invalid average
+        if recent_avg == 0 or np.isnan(recent_avg):
+            recent_avg = 1000.0  # Use reasonable default daily expense
+            recent_std = 300.0
         
         # Adjust predictions based on model performance
         performance_factor = 1.0
@@ -1115,6 +1205,9 @@ class BudgetWiseApp:
         elif "LSTM" in model_name or "GRU" in model_name:
             performance_factor = 0.75
             noise_level = 0.2
+        elif "Linear Regression" in model_name:
+            performance_factor = 0.90
+            noise_level = 0.12
         
         daily_predictions = []
         for i in range(days):
@@ -1124,22 +1217,32 @@ class BudgetWiseApp:
             noise = np.random.normal(0, noise_level)
             
             prediction = recent_avg * trend_factor * seasonal_factor * (1 + noise) * performance_factor
-            daily_predictions.append(max(0, prediction))
+            daily_predictions.append(max(100, prediction))  # Ensure minimum reasonable prediction
         
         avg_prediction = np.mean(daily_predictions)
         total_prediction = np.sum(daily_predictions)
-        change_pct = ((avg_prediction - recent_avg) / recent_avg) * 100
+        
+        # Calculate change percentage safely
+        if recent_avg > 0:
+            change_pct = ((avg_prediction - recent_avg) / recent_avg) * 100
+        else:
+            change_pct = 0.0
         
         return {
             'daily_predictions': daily_predictions,
             'avg_prediction': avg_prediction,
             'total_prediction': total_prediction,
             'change_pct': change_pct,
-            'model_used': model_name
+            'model_used': f"{model_name} (Simulation)"
         }
     
-    def predict_with_prophet(self, model_path, days, start_date):
+    def predict_with_prophet(self, model_path, days, start_date, data_source=None):
         """Predict using Prophet model"""
+        
+        # Use provided data source or fall back to self.all_data
+        if data_source is None:
+            data_source = self.all_data
+        
         try:
             import pickle
             with open(model_path, 'rb') as f:
@@ -1156,7 +1259,7 @@ class BudgetWiseApp:
             
             avg_prediction = np.mean(daily_predictions)
             total_prediction = np.sum(daily_predictions)
-            recent_avg = self.all_data.tail(30)['total_daily_expense'].mean()
+            recent_avg = data_source.tail(30)['total_daily_expense'].mean()
             change_pct = ((avg_prediction - recent_avg) / recent_avg) * 100
             
             return {
@@ -1168,20 +1271,64 @@ class BudgetWiseApp:
             }
         except Exception as e:
             st.warning(f"Prophet prediction failed: {str(e)}")
-            return self.generate_mock_predictions(days, start_date)
+            return self.generate_mock_predictions(days, start_date, data_source)
     
-    def predict_with_baseline_model(self, model, model_name, days, start_date):
+    def predict_with_baseline_model(self, model, model_name, days, start_date, data_source=None):
         """Predict using baseline models like Linear Regression or ARIMA"""
+        
+        # Use provided data source or fall back to self.all_data
+        if data_source is None:
+            data_source = self.all_data
+        
         try:
             # For linear regression and similar models
-            recent_data = self.all_data.tail(60)
+            recent_data = data_source.tail(60)
+            
+            # Debug: Check data availability
+            if len(recent_data) == 0:
+                st.warning("No historical data available for predictions. Using simulation.")
+                return self.generate_enhanced_mock_predictions(model_name, days, start_date, {
+                    "type": "baseline",
+                    "performance": "R² = 0.41"
+                })
+            
+            recent_avg = recent_data['total_daily_expense'].mean()
+            
+            # Debug: Check if recent average is valid
+            if recent_avg == 0 or np.isnan(recent_avg):
+                st.warning("Historical data shows zero expenses. Using simulation based on typical patterns.")
+                return self.generate_enhanced_mock_predictions(model_name, days, start_date, {
+                    "type": "baseline",
+                    "performance": "R² = 0.41"
+                }, data_source)
             
             # Create features that match the model's expectations
             if hasattr(model, 'predict'):
                 # For sklearn models - use the proper feature creation
                 features = self.create_prediction_features(recent_data, days)
-                predictions = model.predict(features)
-                predictions = [max(0, pred) for pred in predictions]
+                
+                # Check if model expects different number of features
+                if hasattr(model, 'n_features_in_'):
+                    expected_features = model.n_features_in_
+                    if features.shape[1] != expected_features:
+                        st.info(f"{model_name} was trained with {expected_features} features, but we have {features.shape[1]}. Using simulation.")
+                        return self.generate_enhanced_mock_predictions(model_name, days, start_date, {
+                            "type": "baseline",
+                            "performance": "R² = 0.41"
+                        }, data_source)
+                
+                # Make predictions
+                raw_predictions = model.predict(features)
+                
+                # Debug: Check raw predictions
+                if np.all(raw_predictions <= 0):
+                    st.warning(f"{model_name} predicted zero or negative values. This model may not be suitable for your data. Using simulation.")
+                    return self.generate_enhanced_mock_predictions(model_name, days, start_date, {
+                        "type": "baseline",
+                        "performance": "R² = 0.41"
+                    }, data_source)
+                
+                predictions = [max(0, pred) for pred in raw_predictions]
             else:
                 # Fallback for other model types
                 predictions = []
@@ -1191,7 +1338,6 @@ class BudgetWiseApp:
             
             avg_prediction = np.mean(predictions)
             total_prediction = np.sum(predictions)
-            recent_avg = recent_data['total_daily_expense'].mean()
             change_pct = ((avg_prediction - recent_avg) / recent_avg) * 100
             
             return {
@@ -1199,7 +1345,7 @@ class BudgetWiseApp:
                 'avg_prediction': avg_prediction,
                 'total_prediction': total_prediction,
                 'change_pct': change_pct,
-                'model_used': model_name
+                'model_used': f"{model_name} (Actual Model)"
             }
         except Exception as e:
             st.warning(f"Baseline model prediction failed: {str(e)}")
@@ -1207,7 +1353,7 @@ class BudgetWiseApp:
             return self.generate_enhanced_mock_predictions(model_name, days, start_date, {
                 "type": "baseline",
                 "performance": "R² = 0.41"
-            })
+            }, data_source)
     
     def create_insights_page(self):
         """Create insights and recommendations page"""
