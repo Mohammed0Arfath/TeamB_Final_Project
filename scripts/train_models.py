@@ -11,11 +11,11 @@ import argparse
 from typing import Dict, Any, List
 
 # Add project root to path
-project_root = Path(__file__).parent.parent.parent
+project_root = Path(__file__).parent.parent
 sys.path.append(str(project_root))
 
 # Import all model modules
-from src.data_preprocessing import DataPreprocessor
+from src.data_preprocessing import AdvancedDataPreprocessor
 from src.feature_engineering import FeatureEngineer
 from src.models.baseline_models import BaselineModels
 from src.models.ml_models import MLModels
@@ -41,7 +41,7 @@ class TrainingOrchestrator:
     def __init__(self, config_path: str = "config/config.yaml"):
         """Initialize orchestrator with configuration."""
         self.config_path = config_path
-        self.data_processor = DataPreprocessor(config_path)
+        self.data_processor = AdvancedDataPreprocessor(config_path)
         self.feature_engineer = FeatureEngineer(config_path)
         self.baseline_models = BaselineModels(config_path)
         self.ml_models = MLModels(config_path)
@@ -72,7 +72,7 @@ class TrainingOrchestrator:
                     return True
             
             # Run preprocessing
-            self.data_processor.run_preprocessing_pipeline()
+            self.data_processor.run_complete_preprocessing_pipeline()
             logger.info("✅ Data preprocessing completed successfully!")
             return True
             
