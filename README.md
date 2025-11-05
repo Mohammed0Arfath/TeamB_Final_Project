@@ -510,7 +510,9 @@ The Streamlit dashboard provides:
 - 📊 **Interactive Charts**: Plotly-powered visualizations
 - 🔮 **Forecasting Interface**: Select categories and time horizons
 - 💰 **Budget Optimizer**: AI-driven recommendations
-- 🎯 **Model Comparison**: Performance metrics visualization
+- 🎯 **Model Comparison**:
+```
+Performance metrics visualization
 │   └── 06_model_comparison.ipynb
 ├── app/
 │   ├── streamlit_app.py
